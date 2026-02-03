@@ -120,9 +120,7 @@ const Navbar = () => {
                 Sign In
               </Button>
             </Link>
-            <Link href="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
+            
           </>
         )}
       </div>
