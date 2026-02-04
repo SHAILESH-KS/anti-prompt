@@ -253,8 +253,7 @@ The Invisible Text Scanner detects hidden or invisible Unicode characters that m
   "scanner_type": "invisible_text"
 }
 ```
-
-**Zero-Width Joiner:**
+**Zero-Width Joiner:**language
 ```json
 {
   "prompt": "Admin\u200Dpanel access - this URL might look legitimate but isn't.",
