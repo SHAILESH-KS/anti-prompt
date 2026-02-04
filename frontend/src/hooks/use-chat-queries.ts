@@ -128,11 +128,22 @@ export function useSendMessage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages, data, chatId }),
       });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to send message");
-      }
+
       const responseData = await res.json();
+
+      if (!res.ok) {
+        // Handle blocked prompts specially
+        if (responseData.blocked) {
+          const error = new Error(
+            responseData.error || "Prompt blocked due to security scan",
+          );
+          (error as any).type = "blocked";
+          (error as any).scanResult = responseData.scanResult;
+          throw error;
+        }
+        throw new Error(responseData.error || "Failed to send message");
+      }
+
       return responseData;
     },
     onSuccess: (_data, variables) => {

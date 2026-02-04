@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Optional
+import numpy as np
 from .base_scanner import BaseScanner
 from .anonymize_scanner import AnonymizeScanner
 from .prompt_injection_scanner import PromptInjectionScanner
@@ -7,13 +8,28 @@ from .secrets_scanner import SecretsScanner
 from .invisible_text_scanner import InvisibleTextScanner
 from .language_scanner import LanguageScanner
 from .toxicity_scanner import ToxicityScanner
-from .sensitive_scanner import SensitiveScanner
 from .factual_consistency_scanner import FactualConsistencyScanner
 from .relevance_scanner import RelevanceScanner
 from .malicious_urls_scanner import MaliciousURLsScanner
 from .ban_topics_scanner import BanTopicsScanner
 from .code_scanner import CodeScanner
 from .gibberish_scanner import GibberishScanner
+
+
+def convert_numpy_types(obj):
+    """Convert numpy types to Python native types for JSON serialization"""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [convert_numpy_types(item) for item in obj]
+    else:
+        return obj
 
 
 class ScannerManager:
@@ -105,14 +121,6 @@ class ScannerManager:
         else:
             print("✗ Code Scanner failed to load")
 
-        # Load Sensitive Scanner
-        sensitive_scanner = SensitiveScanner()
-        if sensitive_scanner.initialize():
-            self.scanners["sensitive"] = sensitive_scanner
-            print("✓ Sensitive Scanner loaded successfully")
-        else:
-            print("✗ Sensitive Scanner failed to load")
-
         # Load Factual Consistency Scanner
         factual_consistency_scanner = FactualConsistencyScanner()
         if factual_consistency_scanner.initialize():
@@ -170,19 +178,22 @@ class ScannerManager:
                 # Output scanner
                 sanitized_output, is_valid, risk_score = scanner.scan(prompt, model_output)
                 detected_entities = scanner.get_detected_entities(model_output)
-                return {
+                result = {
                     "scanner_type": scanner_type,
+                    "prompt": prompt,
+                    "model_output": model_output,
                     "sanitized_output": sanitized_output,
                     "is_valid": is_valid,
                     "risk_score": risk_score,
                     "detected_entities": detected_entities,
                     "scanner_info": scanner.get_info()
                 }
+                return convert_numpy_types(result)
             else:
                 # Input scanner
                 sanitized_prompt, is_valid, risk_score = scanner.scan(prompt)
                 detected_entities = scanner.get_detected_entities(prompt)
-                return {
+                result = {
                     "scanner_type": scanner_type,
                     "sanitized_prompt": sanitized_prompt,
                     "is_valid": is_valid,
@@ -190,6 +201,7 @@ class ScannerManager:
                     "detected_entities": detected_entities,
                     "scanner_info": scanner.get_info()
                 }
+                return convert_numpy_types(result)
         except Exception as e:
             raise RuntimeError(f"Scan failed with scanner '{scanner_type}': {str(e)}")
 

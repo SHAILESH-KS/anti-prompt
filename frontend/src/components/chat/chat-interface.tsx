@@ -114,13 +114,27 @@ export function ChatInterface({
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error(error);
-      const message =
-        error instanceof Error ? error.message : "Something went wrong";
-      const errorMessage: ChatMessage = {
-        role: "assistant",
-        content: `Error: ${message}`,
-      };
+      console.error("Chat error:", error);
+
+      let errorMessage: ChatMessage;
+
+      if (error instanceof Error && (error as any).type === "blocked") {
+        // Handle blocked prompts with detailed information
+        const blockedError = error as any;
+
+        errorMessage = {
+          role: "assistant",
+          content: `🚫 **Prompt Blocked**\n\n${blockedError.message}\n\n**Risk Score:** ${blockedError.scanResult?.max_risk_score || "N/A"}\n**Scanners Run:** ${blockedError.scanResult?.scanners_run || "N/A"}\n\n*Your prompt was flagged by our security scanners and cannot be processed.*`,
+        };
+      } else {
+        const message =
+          error instanceof Error ? error.message : "Something went wrong";
+        errorMessage = {
+          role: "assistant",
+          content: `❌ **Error:** ${message}`,
+        };
+      }
+
       setMessages((prev) => [...prev, errorMessage]);
     }
   };

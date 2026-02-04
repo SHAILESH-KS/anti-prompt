@@ -52,7 +52,6 @@ async def health_check():
             "gibberish_scanner": scanner_manager.get_scanner("gibberish") is not None,
             "ban_topics_scanner": scanner_manager.get_scanner("ban_topics") is not None,
             "code_scanner": scanner_manager.get_scanner("code") is not None,
-            "sensitive_scanner": scanner_manager.get_scanner("sensitive") is not None,
             "factual_consistency_scanner": scanner_manager.get_scanner("factual_consistency") is not None,
             "relevance_scanner": scanner_manager.get_scanner("relevance") is not None,
             "malicious_urls_scanner": scanner_manager.get_scanner("malicious_urls") is not None
@@ -113,7 +112,9 @@ async def scan_all(request: Dict[str, Any]):
                 current_prompt = result["sanitized_prompt"]
 
                 # Track overall validity and risk score
-                if not result["is_valid"]:
+                # Exclude anonymize and secrets scanners from overall validity check
+                # as they modify the prompt and make it suitable regardless of is_valid
+                if not result["is_valid"] and scanner_type not in ["anonymize", "secrets"]:
                     overall_valid = False
                 max_risk_score = max(max_risk_score, result["risk_score"])
 
@@ -215,19 +216,19 @@ async def scan_input(request: Dict[str, Any]):
             detail=f"Scanning failed: {str(e)}"
         )
 
-@app.post("/scan-output")
-async def scan_output(request: Dict[str, Any]):
+@app.post("/scan-all-output")
+async def scan_all_output(request: Dict[str, Any]):
     """
-    Scan model output for issues using specified output scanner
+    Scan model output through all available output scanners sequentially
 
     Request body should contain:
     - prompt: The original prompt (required)
     - model_output: The model output to scan (required)
-    - scanner_type: Type of scanner to use (required)
+
+    Returns comprehensive results from all output scanners
     """
     prompt = request.get("prompt")
     model_output = request.get("model_output")
-    scanner_type = request.get("scanner_type")
 
     if not prompt or not isinstance(prompt, str):
         raise HTTPException(
@@ -241,34 +242,92 @@ async def scan_output(request: Dict[str, Any]):
             detail="Model output must be a non-empty string."
         )
 
-    if not scanner_type or not isinstance(scanner_type, str):
-        raise HTTPException(
-            status_code=400,
-            detail="Scanner type must be a non-empty string."
-        )
-
     try:
-        result = scanner_manager.scan_with_scanner(scanner_type, prompt, model_output)
+        # Get all available scanners
+        available_scanners = scanner_manager.get_available_scanners()
 
-        # Add timestamp to response
-        result["timestamp"] = datetime.datetime.now().isoformat()
+        # Define the order of output scanners only (3 scanners)
+        output_scanners = [
+            "factual_consistency",
+            "relevance",
+            "malicious_urls"
+        ]
 
-        return result
+        # Filter to only available scanners and maintain order
+        scanners_to_run = [s for s in output_scanners if s in available_scanners]
 
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=str(e)
-        )
+        results = []
+        current_output = model_output  # Start with original model output
+        overall_valid = True
+        max_risk_score = -1.0
+        all_detected_entities = []
+
+        # Run each output scanner sequentially, passing the sanitized output to the next
+        for scanner_type in scanners_to_run:
+            try:
+                result = scanner_manager.scan_with_scanner(scanner_type, prompt, current_output)
+
+                # Update current output with sanitized version for next scanner
+                current_output = result["sanitized_output"]
+
+                # Track overall validity and risk score
+                if not result["is_valid"]:
+                    overall_valid = False
+                max_risk_score = max(max_risk_score, result["risk_score"])
+
+                # Collect detected entities
+                if result["detected_entities"]:
+                    all_detected_entities.extend(result["detected_entities"])
+
+                # Add scanner result
+                results.append({
+                    "scanner_type": scanner_type,
+                    "prompt": result["prompt"],
+                    "model_output": result["model_output"],
+                    "sanitized_output": result["sanitized_output"],
+                    "is_valid": result["is_valid"],
+                    "risk_score": result["risk_score"],
+                    "detected_entities": result["detected_entities"],
+                    "scanner_info": result["scanner_info"]
+                })
+
+            except Exception as e:
+                # If a scanner fails, log the error but continue with others
+                results.append({
+                    "scanner_type": scanner_type,
+                    "error": str(e),
+                    "prompt": prompt,
+                    "model_output": current_output,  # Keep current output
+                    "sanitized_output": current_output,  # Keep current output
+                    "is_valid": True,  # Assume valid if scanner fails
+                    "risk_score": 0.0,
+                    "detected_entities": [],
+                    "scanner_info": scanner_manager.get_scanner_info(scanner_type) or {}
+                })
+
+        # Return comprehensive response
+        return {
+            "original_prompt": prompt,
+            "original_model_output": model_output,
+            "final_model_output": current_output,
+            "overall_valid": overall_valid,
+            "max_risk_score": max_risk_score,
+            "scanners_run": len(results),
+            "scanner_results": results,
+            "all_detected_entities": all_detected_entities,
+            "summary": {
+                "total_scanners": len(results),
+                "failed_scanners": len([r for r in results if "error" in r]),
+                "invalid_results": len([r for r in results if not r.get("is_valid", True)]),
+                "total_entities_detected": len(all_detected_entities)
+            },
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Scanning failed: {str(e)}"
+            detail=f"Comprehensive output scanning failed: {str(e)}"
         )
 
 if __name__ == "__main__":

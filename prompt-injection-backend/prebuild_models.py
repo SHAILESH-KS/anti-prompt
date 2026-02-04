@@ -90,7 +90,7 @@ try:
     
     # Categorize scanners
     input_scanners = ['anonymize', 'prompt_injection', 'regex', 'secrets', 'invisible_text', 'language', 'toxicity']
-    output_scanners = ['sensitive', 'factual_consistency', 'relevance', 'malicious_urls']
+    output_scanners = ['factual_consistency', 'relevance', 'malicious_urls']
     
     for name, scanner in manager.scanners.items():
         print(f"\n🔬 Testing scanner: {name}")

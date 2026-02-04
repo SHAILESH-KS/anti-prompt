@@ -14,6 +14,7 @@ class MaliciousURLsScanner(BaseScanner):
             description="Scans for malicious URLs in model output"
         )
         self.scanner = None
+        self.last_detected_urls = []
 
     def initialize(self) -> bool:
         """Initialize the Malicious URLs scanner"""
@@ -45,9 +46,101 @@ class MaliciousURLsScanner(BaseScanner):
         if model_output is None:
             raise ValueError("Model output is required for Malicious URLs scanning")
 
+        # Clear previous detections
+        self.last_detected_urls = []
+
         try:
             # The scanner detects malicious URLs in the model_output
             result = self.scanner.scan(prompt, model_output)
+            
+            # Try to extract URL analysis details
+            try:
+                import re
+                from urllib.parse import urlparse
+                
+                # Extract URLs from model_output
+                url_pattern = r'https?://(?:[-\w.])+(?:[:\d]+)?(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?'
+                urls = re.findall(url_pattern, model_output)
+                
+                if urls:
+                    # Try to get detailed analysis from the scanner
+                    if hasattr(self.scanner, '_classifier') or hasattr(self.scanner, '_pipeline'):
+                        classifier = getattr(self.scanner, '_classifier', None) or getattr(self.scanner, '_pipeline', None)
+                        
+                        if classifier:
+                            for url in urls:
+                                try:
+                                    # Analyze each URL
+                                    results = classifier(url, return_all_scores=True, truncation=True, max_length=512)
+                                    
+                                    if results and isinstance(results[0], list):
+                                        results = results[0]
+                                    
+                                    # Convert to detected entities format
+                                    url_analysis = {
+                                        'url': url,
+                                        'domain': urlparse(url).netloc,
+                                        'classifications': []
+                                    }
+                                    
+                                    for item in results:
+                                        label = item['label']
+                                        score = item['score']
+                                        
+                                        url_analysis['classifications'].append({
+                                            'type': label,
+                                            'score': round(score, 6),
+                                            'severity': 'high' if score > 0.7 else ('medium' if score > 0.5 else 'low'),
+                                            'is_malicious': score > 0.5
+                                        })
+                                    
+                                    # Sort classifications by score
+                                    url_analysis['classifications'].sort(key=lambda x: x['score'], reverse=True)
+                                    
+                                    self.last_detected_urls.append(url_analysis)
+                                    
+                                except Exception as e:
+                                    print(f"Error analyzing URL {url}: {e}")
+                                    # Fallback: basic URL info
+                                    self.last_detected_urls.append({
+                                        'url': url,
+                                        'domain': urlparse(url).netloc,
+                                        'classifications': [{
+                                            'type': 'unknown',
+                                            'score': 0.0,
+                                            'severity': 'low',
+                                            'is_malicious': False
+                                        }]
+                                    })
+                        else:
+                            # Fallback: basic URL extraction without analysis
+                            for url in urls:
+                                self.last_detected_urls.append({
+                                    'url': url,
+                                    'domain': urlparse(url).netloc,
+                                    'classifications': [{
+                                        'type': 'basic_detection',
+                                        'score': 0.0,
+                                        'severity': 'low',
+                                        'is_malicious': False
+                                    }]
+                                })
+                    else:
+                        # Basic URL extraction
+                        for url in urls:
+                            self.last_detected_urls.append({
+                                'url': url,
+                                'domain': urlparse(url).netloc,
+                                'classifications': [{
+                                    'type': 'basic_detection',
+                                    'score': 0.0,
+                                    'severity': 'low',
+                                    'is_malicious': False
+                                }]
+                            })
+                            
+            except Exception as e:
+                print(f"Warning: Could not extract URL analysis details: {e}")
             
             # Handle different return formats from LLMGuard
             if isinstance(result, dict):
@@ -75,4 +168,4 @@ class MaliciousURLsScanner(BaseScanner):
 
     def get_detected_entities(self, text: str) -> List[Dict[str, Any]]:
         """Return information about detected entities (none for this scanner)"""
-        return []
+        return self.last_detected_urls

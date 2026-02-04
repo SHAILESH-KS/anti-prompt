@@ -12,6 +12,86 @@ This document provides sample request bodies for testing each scanner endpoint.
 }
 ```
 
+**Multiple PII Types:**
+```json
+{
+  "prompt": "My name is Jane Smith, I live at 123 Oak Street, Springfield, IL 62701. My SSN is 123-45-6789 and my credit card is 4111-1111-1111-1111. Contact me at jane.smith@email.com or call 555-987-6543.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Address Information:**
+```json
+{
+  "prompt": "I reside at 456 Elm Avenue, Apartment 5B, New York, NY 10001. My mailing address is PO Box 789, Boston, MA 02101.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Financial Information:**
+```json
+{
+  "prompt": "My bank account number is 123456789012 and the routing number is 021000021. My credit card expires on 12/25 and the CVV is 123.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Medical Information:**
+```json
+{
+  "prompt": "Patient ID: 987654321, Date of birth: 01/15/1985, Medical record number: MRN-456789. Diagnosis: Type 2 Diabetes, prescribed Metformin 500mg twice daily.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Government IDs:**
+```json
+{
+  "prompt": "My driver's license number is D123456789 and it expires on 06/30/2025. Passport number: P987654321 issued on 03/15/2019.",
+  "scanner_type": "anonymize"
+}
+```
+
+**IP Addresses and URLs:**
+```json
+{
+  "prompt": "My IP address is 192.168.1.100 and I work from home at 10.0.0.5. Visit my website at http://john-doe-personal-site.com or check my profile at https://linkedin.com/in/johndoe123.",
+  "scanner_type": "anonymize"
+}
+```
+
+**International Phone Numbers:**
+```json
+{
+  "prompt": "Call me at +1-555-123-4567 or +44-20-7946-0958. My fax number is +1-555-123-4568.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Dates and Ages:**
+```json
+{
+  "prompt": "I was born on March 15, 1985, making me 38 years old. My anniversary is 07/22/2010 and my graduation date was 05/30/2007.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Safe Content (No PII):**
+```json
+{
+  "prompt": "Hello, how are you today? I enjoy reading books and going for walks in the park.",
+  "scanner_type": "anonymize"
+}
+```
+
+**Mixed Content:**
+```json
+{
+  "prompt": "Hi, I'm writing a story about a character named Alice Johnson who lives in California. Her email in the story is alice.johnson@fiction.com and she works at a tech company.",
+  "scanner_type": "anonymize"
+}
+```
+
 ### Prompt Injection Scanner
 ```json
 {

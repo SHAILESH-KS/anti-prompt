@@ -11,6 +11,7 @@ const Navbar = () => {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
@@ -52,6 +53,12 @@ const Navbar = () => {
           >
             Home
           </Link>
+          <Link
+            href="/models"
+            className="text-sm hover:text-primary transition-colors"
+          >
+            Models
+          </Link>
           {session && (
             <>
               <Link
@@ -60,11 +67,56 @@ const Navbar = () => {
               >
                 Chat
               </Link>
+              <Link
+                href="/dashboard"
+                className="text-sm hover:text-primary transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/profile"
+                className="text-sm hover:text-primary transition-colors"
+              >
+                Profile
+              </Link>
+              <Link
+                href="/prompt-input"
+                className="text-sm hover:text-primary transition-colors"
+              >
+                Prompt Input
+              </Link>
+              <Link
+                href="/prompt-output"
+                className="text-sm hover:text-primary transition-colors"
+              >
+                Prompt Output
+              </Link>
             </>
           )}
         </div>
       </div>
       <div className="flex items-center space-x-4">
+        {/* Mobile menu button */}
+        <button
+          className="md:hidden p-2"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={
+                isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"
+              }
+            />
+          </svg>
+        </button>
         {isPending ? (
           <span className="text-sm text-muted-foreground">Loading...</span>
         ) : session ? (
@@ -117,6 +169,66 @@ const Navbar = () => {
           </>
         )}
       </div>
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-background border-b shadow-lg">
+          <div className="flex flex-col space-y-2 p-4">
+            <Link
+              href="/"
+              className="text-sm hover:text-primary transition-colors py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              href="/models"
+              className="text-sm hover:text-primary transition-colors py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Models
+            </Link>
+            {session && (
+              <>
+                <Link
+                  href="/chat"
+                  className="text-sm hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Chat
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="text-sm hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/profile"
+                  className="text-sm hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link
+                  href="/prompt-input"
+                  className="text-sm hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Prompt Input
+                </Link>
+                <Link
+                  href="/prompt-output"
+                  className="text-sm hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Prompt Output
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

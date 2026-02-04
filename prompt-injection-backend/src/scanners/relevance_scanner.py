@@ -1,4 +1,6 @@
 from typing import Dict, Any, List
+import torch
+import numpy as np
 from llm_guard.output_scanners import Relevance
 from .base_scanner import BaseScanner
 
@@ -14,6 +16,7 @@ class RelevanceScanner(BaseScanner):
             description="Scans for relevance between prompt and model output"
         )
         self.scanner = None
+        self.last_similarity_score = None
 
     def initialize(self) -> bool:
         """Initialize the Relevance scanner"""
@@ -49,6 +52,32 @@ class RelevanceScanner(BaseScanner):
             # The scanner checks relevance between prompt and model_output
             result = self.scanner.scan(prompt, model_output)
             
+            # Try to get the similarity score from the scanner
+            self.last_similarity_score = getattr(self.scanner, 'similarity_score', None)
+            if self.last_similarity_score is None and isinstance(result, dict):
+                self.last_similarity_score = result.get('similarity_score')
+            if self.last_similarity_score is None:
+                # Try to find similarity_score in result or scanner
+                if isinstance(result, dict) and 'similarity_score' in result:
+                    self.last_similarity_score = result['similarity_score']
+                elif hasattr(self.scanner, '_similarity_score'):
+                    self.last_similarity_score = self.scanner._similarity_score
+                elif hasattr(self.scanner, 'last_similarity_score'):
+                    self.last_similarity_score = self.scanner.last_similarity_score
+                else:
+                    # Compute similarity manually
+                    try:
+                        inputs1 = self.scanner._tokenizer(prompt, return_tensors='pt', truncation=True, max_length=512)
+                        inputs2 = self.scanner._tokenizer(model_output, return_tensors='pt', truncation=True, max_length=512)
+                        with torch.no_grad():
+                            emb1 = self.scanner._model(**inputs1).pooler_output
+                            emb2 = self.scanner._model(**inputs2).pooler_output
+                            # Cosine similarity
+                            self.last_similarity_score = torch.cosine_similarity(emb1, emb2).item()
+                    except Exception as e:
+                        print(f"Failed to compute similarity: {e}")
+                        self.last_similarity_score = None
+            
             # Handle different return formats from LLMGuard
             if isinstance(result, dict):
                 sanitized_output = result.get("sanitized_output", model_output)
@@ -74,5 +103,11 @@ class RelevanceScanner(BaseScanner):
             raise RuntimeError(f"Relevance scanning failed: {str(e)}")
 
     def get_detected_entities(self, text: str) -> List[Dict[str, Any]]:
-        """Return information about detected entities (none for this scanner)"""
+        """Return information about detected entities (similarity score for this scanner)"""
+        if self.last_similarity_score is not None:
+            return [{
+                "entity": "similarity_score",
+                "score": float(self.last_similarity_score),
+                "type": "relevance_score"
+            }]
         return []

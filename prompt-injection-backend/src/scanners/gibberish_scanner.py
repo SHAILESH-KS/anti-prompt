@@ -48,7 +48,7 @@ class GibberishScanner(BaseScanner):
         self.last_detected_gibberish = []
 
         # Perform the scan
-        sanitized_prompt, is_valid, risk_score = self.scanner.scan(prompt)
+        sanitized_prompt, scanner_is_valid, risk_score = self.scanner.scan(prompt)
 
         # Capture gibberish analysis results
         try:
@@ -120,6 +120,10 @@ class GibberishScanner(BaseScanner):
             print(f"Warning: Could not extract gibberish details: {e}")
             import traceback
             traceback.print_exc()
+
+        # Override is_valid: only return false if high severity gibberish is detected
+        has_high_severity = any(entity.get('severity') == 'high' for entity in self.last_detected_gibberish)
+        is_valid = not has_high_severity
 
         return sanitized_prompt, is_valid, risk_score
 

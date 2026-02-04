@@ -1,4 +1,5 @@
 from typing import Dict, Any, List
+import torch
 from llm_guard.output_scanners import FactualConsistency
 from .base_scanner import BaseScanner
 
@@ -14,6 +15,7 @@ class FactualConsistencyScanner(BaseScanner):
             description="Scans for factual consistency between prompt and model output"
         )
         self.scanner = None
+        self.last_prediction = None
 
     def initialize(self) -> bool:
         """Initialize the Factual Consistency scanner"""
@@ -49,14 +51,44 @@ class FactualConsistencyScanner(BaseScanner):
             # The scanner expects prompt as premise and model_output as the text to check
             result = self.scanner.scan(prompt, model_output)
             
+            # Try to get the prediction from the scanner
+            self.last_prediction = getattr(self.scanner, 'prediction', None)
+            if self.last_prediction is None and isinstance(result, dict):
+                self.last_prediction = result.get('prediction')
+            if self.last_prediction is None:
+                # Try to find prediction in result or scanner
+                if isinstance(result, dict) and 'prediction' in result:
+                    self.last_prediction = result['prediction']
+                elif hasattr(self.scanner, '_prediction'):
+                    self.last_prediction = self.scanner._prediction
+                elif hasattr(self.scanner, 'last_prediction'):
+                    self.last_prediction = self.scanner.last_prediction
+                else:
+                    # Run the model prediction manually
+                    try:
+                        # For NLI, input format is [CLS] premise [SEP] hypothesis [SEP]
+                        inputs = self.scanner._tokenizer(prompt, model_output, return_tensors='pt', truncation=True, max_length=512)
+                        with torch.no_grad():
+                            outputs = self.scanner._model(**inputs)
+                            logits = outputs.logits
+                            probs = torch.softmax(logits, dim=1)
+                            # Assuming labels are [entailment, not_entailment]
+                            self.last_prediction = {
+                                'entailment': probs[0][0].item(),
+                                'not_entailment': probs[0][1].item()
+                            }
+                    except Exception as e:
+                        print(f"Failed to get prediction: {e}")
+                        self.last_prediction = None
+            
             # Handle different return formats from LLMGuard
             if isinstance(result, dict):
-                sanitized_output = result.get("sanitized_output", model_output)
-                is_valid = result.get("is_valid", True)
-                risk_score = result.get("risk_score", 0.0)
+                sanitized_output = str(result.get("sanitized_output", model_output))
+                is_valid = bool(result.get("is_valid", True))
+                risk_score = float(result.get("risk_score", 0.0))
             elif isinstance(result, (list, tuple)):
                 if len(result) >= 3:
-                    sanitized_output, is_valid, risk_score = result[0], result[1], result[2]
+                    sanitized_output, is_valid, risk_score = str(result[0]), bool(result[1]), float(result[2])
                 else:
                     # Fallback if unexpected format
                     sanitized_output = model_output
@@ -74,5 +106,14 @@ class FactualConsistencyScanner(BaseScanner):
             raise RuntimeError(f"Factual Consistency scanning failed: {str(e)}")
 
     def get_detected_entities(self, text: str) -> List[Dict[str, Any]]:
-        """Return information about detected entities (none for this scanner)"""
+        """Return information about detected entities (entailment scores for this scanner)"""
+        if self.last_prediction and isinstance(self.last_prediction, dict):
+            entities = []
+            for key, value in self.last_prediction.items():
+                entities.append({
+                    "entity": key,
+                    "score": float(value),
+                    "type": "factual_consistency_score"
+                })
+            return entities
         return []

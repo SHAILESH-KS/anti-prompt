@@ -108,7 +108,10 @@ export interface IPromptTest extends Document {
   scanner_results: ScannerResult[];
   all_detected_entities: DetectedEntity[];
   summary: IPromptTestSummary;
+  linkedMessage: mongoose.Types.ObjectId;
   timestamp: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const PromptTestSummarySchema = new Schema<IPromptTestSummary>({
@@ -128,10 +131,16 @@ const PromptTestSchema = new Schema<IPromptTest>(
     scanner_results: [{ type: Schema.Types.Mixed }],
     all_detected_entities: [{ type: Schema.Types.Mixed }],
     summary: PromptTestSummarySchema,
+    linkedMessage: {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+      required: true,
+    },
     timestamp: { type: Date, required: true },
   },
   {
     collection: "prompttests",
+    timestamps: true, // Adds createdAt and updatedAt
   },
 );
 

@@ -4,6 +4,15 @@ import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { cn } from "@/src/lib/utils";
 import { useChats, useDeleteChat } from "@/src/hooks/use-chat-queries";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SidebarProps {
   onChatSelect: (chatId: string) => void;
@@ -19,19 +28,14 @@ export function Sidebar({
   const { data: chats = [], isLoading } = useChats();
   const deleteChat = useDeleteChat();
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+
   const handleDeleteChat = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this chat?")) return;
-
-    try {
-      await deleteChat.mutateAsync(id);
-      if (currentChatId === id) {
-        onNewChat();
-      }
-    } catch (error) {
-      console.error("Failed to delete chat", error);
-    }
+    setChatToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -83,6 +87,44 @@ export function Sidebar({
           ))
         )}
       </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Chat</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this chat? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!chatToDelete) return;
+                try {
+                  await deleteChat.mutateAsync(chatToDelete);
+                  if (currentChatId === chatToDelete) {
+                    onNewChat();
+                  }
+                  setDeleteDialogOpen(false);
+                  setChatToDelete(null);
+                } catch (error) {
+                  console.error("Failed to delete chat", error);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
