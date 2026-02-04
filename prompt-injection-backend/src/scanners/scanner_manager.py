@@ -1,0 +1,189 @@
+from typing import Dict, Any, List, Optional
+from .base_scanner import BaseScanner
+from .anonymize_scanner import AnonymizeScanner
+from .prompt_injection_scanner import PromptInjectionScanner
+from .regex_scanner import RegexScanner
+from .secrets_scanner import SecretsScanner
+from .invisible_text_scanner import InvisibleTextScanner
+from .language_scanner import LanguageScanner
+from .sentiment_scanner import SentimentScanner
+from .toxicity_scanner import ToxicityScanner
+from .token_limit_scanner import TokenLimitScanner
+from .sensitive_scanner import SensitiveScanner
+from .factual_consistency_scanner import FactualConsistencyScanner
+from .relevance_scanner import RelevanceScanner
+from .malicious_urls_scanner import MaliciousURLsScanner
+
+
+class ScannerManager:
+    """Manager for loading and managing different input scanners"""
+
+    def __init__(self):
+        self.scanners: Dict[str, BaseScanner] = {}
+        self._load_scanners()
+
+    def _load_scanners(self):
+        """Load all available scanners"""
+        # Load Anonymize Scanner
+        anonymize_scanner = AnonymizeScanner()
+        if anonymize_scanner.initialize():
+            self.scanners["anonymize"] = anonymize_scanner
+            print("✓ Anonymize Scanner loaded successfully")
+        else:
+            print("✗ Anonymize Scanner failed to load")
+
+        # Load Prompt Injection Scanner
+        prompt_injection_scanner = PromptInjectionScanner()
+        if prompt_injection_scanner.initialize():
+            self.scanners["prompt_injection"] = prompt_injection_scanner
+            print("✓ Prompt Injection Scanner loaded successfully")
+        else:
+            print("✗ Prompt Injection Scanner failed to load")
+
+        # Load Regex Scanner
+        regex_scanner = RegexScanner()
+        if regex_scanner.initialize():
+            self.scanners["regex"] = regex_scanner
+            print("✓ Regex Scanner loaded successfully")
+        else:
+            print("✗ Regex Scanner failed to load")
+
+        # Load Secrets Scanner
+        secrets_scanner = SecretsScanner()
+        if secrets_scanner.initialize():
+            self.scanners["secrets"] = secrets_scanner
+            print("✓ Secrets Scanner loaded successfully")
+        else:
+            print("✗ Secrets Scanner failed to load")
+
+        # Load Invisible Text Scanner
+        invisible_text_scanner = InvisibleTextScanner()
+        if invisible_text_scanner.initialize():
+            self.scanners["invisible_text"] = invisible_text_scanner
+            print("✓ Invisible Text Scanner loaded successfully")
+        else:
+            print("✗ Invisible Text Scanner failed to load")
+
+        # Load Language Scanner
+        language_scanner = LanguageScanner()
+        if language_scanner.initialize():
+            self.scanners["language"] = language_scanner
+            print("✓ Language Scanner loaded successfully")
+        else:
+            print("✗ Language Scanner failed to load")
+
+        # Load Sentiment Scanner
+        sentiment_scanner = SentimentScanner()
+        if sentiment_scanner.initialize():
+            self.scanners["sentiment"] = sentiment_scanner
+            print("✓ Sentiment Scanner loaded successfully")
+        else:
+            print("✗ Sentiment Scanner failed to load")
+
+        # Load Toxicity Scanner
+        toxicity_scanner = ToxicityScanner()
+        if toxicity_scanner.initialize():
+            self.scanners["toxicity"] = toxicity_scanner
+            print("✓ Toxicity Scanner loaded successfully")
+        else:
+            print("✗ Toxicity Scanner failed to load")
+
+        # Load Token Limit Scanner
+        token_limit_scanner = TokenLimitScanner()
+        if token_limit_scanner.initialize():
+            self.scanners["token_limit"] = token_limit_scanner
+            print("✓ Token Limit Scanner loaded successfully")
+        else:
+            print("✗ Token Limit Scanner failed to load")
+
+        # Load Sensitive Scanner
+        sensitive_scanner = SensitiveScanner()
+        if sensitive_scanner.initialize():
+            self.scanners["sensitive"] = sensitive_scanner
+            print("✓ Sensitive Scanner loaded successfully")
+        else:
+            print("✗ Sensitive Scanner failed to load")
+
+        # Load Factual Consistency Scanner
+        factual_consistency_scanner = FactualConsistencyScanner()
+        if factual_consistency_scanner.initialize():
+            self.scanners["factual_consistency"] = factual_consistency_scanner
+            print("✓ Factual Consistency Scanner loaded successfully")
+        else:
+            print("✗ Factual Consistency Scanner failed to load")
+
+        # Load Relevance Scanner
+        relevance_scanner = RelevanceScanner()
+        if relevance_scanner.initialize():
+            self.scanners["relevance"] = relevance_scanner
+            print("✓ Relevance Scanner loaded successfully")
+        else:
+            print("✗ Relevance Scanner failed to load")
+
+        # Load Malicious URLs Scanner
+        malicious_urls_scanner = MaliciousURLsScanner()
+        if malicious_urls_scanner.initialize():
+            self.scanners["malicious_urls"] = malicious_urls_scanner
+            print("✓ Malicious URLs Scanner loaded successfully")
+        else:
+            print("✗ Malicious URLs Scanner failed to load")
+
+    def get_scanner(self, scanner_type: str) -> Optional[BaseScanner]:
+        """Get a scanner by type"""
+        return self.scanners.get(scanner_type.lower())
+
+    def get_available_scanners(self) -> List[str]:
+        """Get list of available scanner types"""
+        return list(self.scanners.keys())
+
+    def get_scanner_info(self, scanner_type: str) -> Optional[Dict[str, Any]]:
+        """Get information about a specific scanner"""
+        scanner = self.get_scanner(scanner_type)
+        if scanner:
+            return scanner.get_info()
+        return None
+
+    def get_all_scanners_info(self) -> List[Dict[str, Any]]:
+        """Get information about all scanners"""
+        return [scanner.get_info() for scanner in self.scanners.values()]
+
+    def scan_with_scanner(self, scanner_type: str, prompt: str, model_output: str = None) -> Dict[str, Any]:
+        """Scan a prompt with a specific scanner"""
+        scanner = self.get_scanner(scanner_type)
+        if not scanner:
+            raise ValueError(f"Scanner type '{scanner_type}' not found or not available")
+
+        if not scanner.is_available():
+            raise RuntimeError(f"Scanner '{scanner_type}' is not available")
+
+        try:
+            if model_output is not None:
+                # Output scanner
+                sanitized_output, is_valid, risk_score = scanner.scan(prompt, model_output)
+                detected_entities = scanner.get_detected_entities(model_output)
+                return {
+                    "scanner_type": scanner_type,
+                    "sanitized_output": sanitized_output,
+                    "is_valid": is_valid,
+                    "risk_score": risk_score,
+                    "detected_entities": detected_entities,
+                    "scanner_info": scanner.get_info()
+                }
+            else:
+                # Input scanner
+                sanitized_prompt, is_valid, risk_score = scanner.scan(prompt)
+                detected_entities = scanner.get_detected_entities(prompt)
+                return {
+                    "scanner_type": scanner_type,
+                    "sanitized_prompt": sanitized_prompt,
+                    "is_valid": is_valid,
+                    "risk_score": risk_score,
+                    "detected_entities": detected_entities,
+                    "scanner_info": scanner.get_info()
+                }
+        except Exception as e:
+            raise RuntimeError(f"Scan failed with scanner '{scanner_type}': {str(e)}")
+
+
+# Global scanner manager instance
+scanner_manager = ScannerManager()

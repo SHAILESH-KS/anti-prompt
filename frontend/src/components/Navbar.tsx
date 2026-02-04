@@ -61,6 +61,18 @@ const Navbar = () => {
                 Dashboard
               </Link>
               <Link
+                href="/chat"
+                className="text-sm hover:text-primary transition-colors"
+              >
+                Chat
+              </Link>
+              <Link
+                href="/models"
+                className="text-sm hover:text-primary transition-colors"
+              >
+                Models
+              </Link>
+              <Link
                 href="/profile"
                 className="text-sm hover:text-primary transition-colors"
               >
