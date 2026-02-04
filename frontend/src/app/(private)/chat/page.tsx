@@ -30,7 +30,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex h-[calc(100vh-48px)] overflow-hidden">
       {/* Sidebar - Always visible */}
       <div className="w-64 border-r bg-background overflow-hidden">
         <Sidebar

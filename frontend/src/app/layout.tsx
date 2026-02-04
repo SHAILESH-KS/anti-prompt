@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Anti-Prompt Injection - Secure AI Applications",
+  title: "PromptGuard - Secure AI Applications",
   description:
     "Test and analyze AI prompt injection vulnerabilities. Secure your AI applications from malicious prompts with advanced scanning tools.",
 };
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-16`}
       >
         <QueryProvider>
           <ThemeProvider

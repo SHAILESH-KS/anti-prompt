@@ -6,6 +6,11 @@ import { authClient } from "@/src/lib/auth-client";
 import { Button } from "@/src/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Shield, Menu, X } from "lucide-react";
+import clsx from "clsx";
+
+const navItem =
+  "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors";
 
 const Navbar = () => {
   const { data: session, isPending } = authClient.useSession();
@@ -15,19 +20,16 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
-    toast.loading("Signing out...", { id: "logout" });
+    toast.loading("Signing out…", { id: "logout" });
 
-    // Add a small delay for smooth experience
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((r) => setTimeout(r, 1200));
 
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          toast.success("Signed out successfully", { id: "logout" });
-          setTimeout(() => {
-            router.push("/signin");
-            router.refresh();
-          }, 500);
+          toast.success("Signed out", { id: "logout" });
+          router.push("/signin");
+          router.refresh();
         },
         onError: () => {
           setIsLoggingOut(false);
@@ -38,199 +40,146 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="flex items-center justify-between w-full h-16 px-4 md:px-8 bg-background text-foreground border-b">
-      <div className="flex items-center space-x-6">
-        <Link
-          href="/"
-          className="text-xl font-bold hover:text-primary transition-colors"
-        >
-          Anti-Prompt Injection
-        </Link>
-        <div className="hidden md:flex items-center space-x-4">
+    <>
+      {/* NAVBAR */}
+      <nav className="fixed top-4 left-4 right-4 z-50 mx-auto flex h-16 max-w-7xl items-center rounded-2xl border border-border/30 bg-background/80 px-6 backdrop-blur-xl shadow-lg">
+        {/* LEFT — Logo (always visible) */}
+        <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="text-sm hover:text-primary transition-colors"
+            className="flex items-center gap-2 font-semibold tracking-tight hover:text-primary transition-colors"
           >
-            Home
+            <Shield className="h-6 w-6 text-primary" />
+            <span className="text-lg">PromptGuard</span>
           </Link>
-          <Link
-            href="/models"
-            className="text-sm hover:text-primary transition-colors"
-          >
-            Models
-          </Link>
+        </div>
+
+        {/* CENTER — Desktop nav only */}
+        <div className="hidden md:flex flex-1 items-center justify-center gap-6">
           {session && (
             <>
-              <Link
-                href="/chat"
-                className="text-sm hover:text-primary transition-colors"
-              >
+              <Link href="/chat" className={navItem}>
                 Chat
               </Link>
-              <Link
-                href="/dashboard"
-                className="text-sm hover:text-primary transition-colors"
-              >
+              <Link href="/dashboard" className={navItem}>
                 Dashboard
               </Link>
-              <Link
-                href="/profile"
-                className="text-sm hover:text-primary transition-colors"
-              >
-                Profile
-              </Link>
-              <Link
-                href="/prompt-input"
-                className="text-sm hover:text-primary transition-colors"
-              >
+              <Link href="/prompt-input" className={navItem}>
                 Prompt Input
               </Link>
-              <Link
-                href="/prompt-output"
-                className="text-sm hover:text-primary transition-colors"
-              >
+              <Link href="/prompt-output" className={navItem}>
                 Prompt Output
               </Link>
             </>
           )}
         </div>
-      </div>
-      <div className="flex items-center space-x-4">
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden p-2"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d={
-                isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"
-              }
-            />
-          </svg>
-        </button>
-        {isPending ? (
-          <span className="text-sm text-muted-foreground">Loading...</span>
-        ) : session ? (
-          <>
-            <span className="hidden md:inline text-sm text-muted-foreground">
-              Welcome, {session.user.name || session.user.email}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSignOut}
-              disabled={isLoggingOut}
-            >
-              {isLoggingOut ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Signing out...
-                </>
-              ) : (
-                "Sign Out"
-              )}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Link href="/signin">
-              <Button variant="ghost" size="sm">
-                Sign In
+
+        {/* RIGHT — Desktop auth / Mobile menu */}
+        <div className="ml-auto flex items-center gap-3">
+          {/* Desktop auth */}
+          {!isPending && session && (
+            <>
+              <span className="hidden lg:block text-xs text-muted-foreground">
+                {session.user.name || session.user.email}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="hidden md:inline-flex"
+                disabled={isLoggingOut}
+                onClick={handleSignOut}
+              >
+                {isLoggingOut ? "Signing out…" : "Sign out"}
               </Button>
+            </>
+          )}
+
+          {!isPending && !session && (
+            <Link href="/signin" className="hidden md:inline-flex">
+              <Button size="sm">Sign in</Button>
             </Link>
-          </>
-        )}
-      </div>
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-background border-b shadow-lg">
-          <div className="flex flex-col space-y-2 p-4">
-            <Link
-              href="/"
-              className="text-sm hover:text-primary transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/models"
-              className="text-sm hover:text-primary transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Models
-            </Link>
-            {session && (
-              <>
-                <Link
-                  href="/chat"
-                  className="text-sm hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Chat
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="text-sm hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/profile"
-                  className="text-sm hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-                <Link
-                  href="/prompt-input"
-                  className="text-sm hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Prompt Input
-                </Link>
-                <Link
-                  href="/prompt-output"
-                  className="text-sm hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Prompt Output
-                </Link>
-              </>
-            )}
-          </div>
+          )}
+
+          {/* Mobile burger */}
+          <button
+            onClick={() => setIsMenuOpen((v) => !v)}
+            className="md:hidden rounded-lg p-2 hover:bg-muted transition"
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
-      )}
-    </nav>
+      </nav>
+
+      {/* MOBILE COLLAPSIBLE MENU */}
+      <div
+        className={clsx(
+          "fixed inset-x-4 top-24 z-40 rounded-2xl border border-border/30 bg-background shadow-xl transition-all duration-300 md:hidden",
+          isMenuOpen
+            ? "opacity-100 translate-y-0"
+            : "pointer-events-none opacity-0 -translate-y-4",
+        )}
+      >
+        <div className="flex flex-col items-center gap-2 p-4">
+          {!session && (
+            <MobileLink href="/signin" close={setIsMenuOpen}>
+              Sign in
+            </MobileLink>
+          )}
+
+          {session && (
+            <>
+              <MobileLink href="/chat" close={setIsMenuOpen}>
+                Chat
+              </MobileLink>
+              <MobileLink href="/dashboard" close={setIsMenuOpen}>
+                Dashboard
+              </MobileLink>
+              <MobileLink href="/profile" close={setIsMenuOpen}>
+                Profile
+              </MobileLink>
+              <MobileLink href="/prompt-input" close={setIsMenuOpen}>
+                Prompt Input
+              </MobileLink>
+              <MobileLink href="/prompt-output" close={setIsMenuOpen}>
+                Prompt Output
+              </MobileLink>
+
+              <div className="my-2 h-px w-full bg-border" />
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isLoggingOut}
+                onClick={handleSignOut}
+              >
+                {isLoggingOut ? "Signing out…" : "Sign out"}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
+
+function MobileLink({
+  href,
+  close,
+  children,
+}: {
+  href: string;
+  close: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={() => close(false)}
+      className="w-full rounded-lg px-3 py-2 text-center text-sm hover:bg-muted transition"
+    >
+      {children}
+    </Link>
+  );
+}
 
 export default Navbar;

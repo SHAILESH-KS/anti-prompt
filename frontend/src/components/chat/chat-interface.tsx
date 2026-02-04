@@ -140,9 +140,9 @@ export function ChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] py-4 relative scrollbar-hide">
+    <div className="flex flex-col h-full relative scrollbar-hide">
       <ChatContainerRoot className="flex-1 overflow-hidden scrollbar-hide">
-        <ChatContainerContent className="flex-1 space-y-6 pt-4 pb-40 scrollbar-hide">
+        <ChatContainerContent className="flex-1 space-y-6 pb-40 scrollbar-hide">
           {isLoadingMessages ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 space-y-4 pt-20">
               <Loader variant="typing" size="lg" />

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/src/lib/auth-server";
-import Navbar from "@/src/components/Navbar";
+import PrivateNavbar from "@/src/components/PrivateNavbar";
 
 export default async function PrivateLayout({
   children,
@@ -15,8 +15,8 @@ export default async function PrivateLayout({
 
   return (
     <>
-      <Navbar />
-      {children}
+      <PrivateNavbar userName={session.user.name} />
+      <div className="">{children}</div>
     </>
   );
 }
