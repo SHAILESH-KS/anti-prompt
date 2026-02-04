@@ -16,41 +16,21 @@ export default async function ProfilePage() {
       {user && (
         <Card>
           <CardHeader>
-            <CardTitle>Your Profile Information</CardTitle>
+            <CardTitle>Account Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Name
               </label>
-              <p className="mt-1 text-lg">{user.name}</p>
+              <p className="mt-1">{user.name}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Email
               </label>
-              <p className="mt-1 text-lg">{user.email}</p>
+              <p className="mt-1">{user.email}</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email Verified
-              </label>
-              <p className="mt-1 text-lg">
-                {user.emailVerified ? "Verified" : "Not Verified"}
-              </p>
-            </div>
-            {user.image && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Profile Image
-                </label>
-                <img
-                  src={user.image}
-                  alt="Profile"
-                  className="mt-1 w-20 h-20 rounded-full"
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
       )}

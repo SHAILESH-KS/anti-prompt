@@ -11,6 +11,7 @@ class LanguageScanner(BaseScanner):
             description="Scans prompts for language authenticity and detects non-English content"
         )
         self.scanner = None
+        self.last_detected_languages = []
 
     def initialize(self) -> bool:
         """Initialize the Language scanner with LLM Guard"""
@@ -43,9 +44,69 @@ class LanguageScanner(BaseScanner):
         if not self.available or not self.scanner:
             raise RuntimeError("LanguageScanner is not available")
 
-        return self.scanner.scan(prompt)
+        # Clear previous detections
+        self.last_detected_languages = []
+        
+        # Detect languages using langdetect
+        try:
+            from langdetect import detect_langs
+            
+            # Get language detections with probabilities
+            detections = detect_langs(prompt)
+            
+            for detection in detections:
+                lang_code = detection.lang
+                confidence = detection.prob
+                
+                self.last_detected_languages.append({
+                    "language": lang_code,
+                    "language_name": self._get_language_name(lang_code),
+                    "confidence": round(confidence, 4),
+                    "is_valid": lang_code in ["en"]
+                })
+                
+        except Exception as e:
+            print(f"Error detecting languages: {e}")
+        
+        # Perform the scan
+        result = self.scanner.scan(prompt)
+        
+        return result
+
+    def _get_language_name(self, code: str) -> str:
+        """Convert language code to full name"""
+        language_names = {
+            "en": "English",
+            "es": "Spanish",
+            "fr": "French",
+            "de": "German",
+            "it": "Italian",
+            "pt": "Portuguese",
+            "ru": "Russian",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "zh": "Chinese",
+            "ar": "Arabic",
+            "hi": "Hindi",
+            "nl": "Dutch",
+            "pl": "Polish",
+            "tr": "Turkish",
+            "vi": "Vietnamese",
+            "th": "Thai",
+            "sv": "Swedish",
+            "da": "Danish",
+            "fi": "Finnish",
+            "no": "Norwegian",
+            "cs": "Czech",
+            "el": "Greek",
+            "he": "Hebrew",
+            "id": "Indonesian",
+            "ms": "Malay",
+            "ro": "Romanian",
+            "uk": "Ukrainian"
+        }
+        return language_names.get(code, code.upper())
 
     def get_detected_entities(self, prompt: str) -> List[Dict[str, Any]]:
         """Get detected language information from the prompt"""
-        # Language scanner doesn't provide detailed entities
-        return []
+        return self.last_detected_languages

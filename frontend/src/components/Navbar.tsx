@@ -43,7 +43,7 @@ const Navbar = () => {
           href="/"
           className="text-xl font-bold hover:text-primary transition-colors"
         >
-          BetterAuth
+          Anti-Prompt Injection
         </Link>
         <div className="hidden md:flex items-center space-x-4">
           <Link
@@ -55,28 +55,10 @@ const Navbar = () => {
           {session && (
             <>
               <Link
-                href="/dashboard"
-                className="text-sm hover:text-primary transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
                 href="/chat"
                 className="text-sm hover:text-primary transition-colors"
               >
                 Chat
-              </Link>
-              <Link
-                href="/models"
-                className="text-sm hover:text-primary transition-colors"
-              >
-                Models
-              </Link>
-              <Link
-                href="/profile"
-                className="text-sm hover:text-primary transition-colors"
-              >
-                Profile
               </Link>
             </>
           )}
@@ -132,7 +114,6 @@ const Navbar = () => {
                 Sign In
               </Button>
             </Link>
-            
           </>
         )}
       </div>

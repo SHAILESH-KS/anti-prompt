@@ -1,17 +1,17 @@
-import { NextResponse } from 'next/server';
-import connectToDatabase from '@/src/lib/db';
-import { Chat } from '@/src/lib/models';
-import { auth } from '@/src/lib/auth';
-import { headers } from 'next/headers';
+import { NextResponse } from "next/server";
+import connectToDatabase from "@/src/lib/db";
+import { Chat } from "@/src/models";
+import { auth } from "@/src/lib/auth";
+import { headers } from "next/headers";
 
 export async function GET(req: Request) {
   try {
     const session = await auth.api.getSession({
-        headers: await headers()
+      headers: await headers(),
     });
 
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectToDatabase();
@@ -22,39 +22,43 @@ export async function GET(req: Request) {
 
     const chats = await Chat.find({ userId })
       .sort({ updatedAt: -1 })
-      .select('_id title createdAt updatedAt');
+      .select("_id title createdAt updatedAt");
 
     return NextResponse.json({ chats });
-  } catch (error: any) {
-    console.error('Error fetching chats:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("Error fetching chats:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch chats";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const session = await auth.api.getSession({
-        headers: await headers()
+      headers: await headers(),
     });
-    
+
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { title } = await req.json();
     const userId = session.user.id;
 
     await connectToDatabase();
-    
+
     // Explicitly create with title or default
     const chat = await Chat.create({
       userId,
-      title: title || 'New Chat',
+      title: title || "New Chat",
     });
 
     return NextResponse.json({ chat });
-  } catch (error: any) {
-    console.error('Error creating chat:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("Error creating chat:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to create chat";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

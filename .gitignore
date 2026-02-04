@@ -112,3 +112,6 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Python backend models
+prompt-injection-backend/models/

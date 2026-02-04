@@ -6,13 +6,14 @@ from .regex_scanner import RegexScanner
 from .secrets_scanner import SecretsScanner
 from .invisible_text_scanner import InvisibleTextScanner
 from .language_scanner import LanguageScanner
-from .sentiment_scanner import SentimentScanner
 from .toxicity_scanner import ToxicityScanner
-from .token_limit_scanner import TokenLimitScanner
 from .sensitive_scanner import SensitiveScanner
 from .factual_consistency_scanner import FactualConsistencyScanner
 from .relevance_scanner import RelevanceScanner
 from .malicious_urls_scanner import MaliciousURLsScanner
+from .ban_topics_scanner import BanTopicsScanner
+from .code_scanner import CodeScanner
+from .gibberish_scanner import GibberishScanner
 
 
 class ScannerManager:
@@ -72,14 +73,6 @@ class ScannerManager:
         else:
             print("✗ Language Scanner failed to load")
 
-        # Load Sentiment Scanner
-        sentiment_scanner = SentimentScanner()
-        if sentiment_scanner.initialize():
-            self.scanners["sentiment"] = sentiment_scanner
-            print("✓ Sentiment Scanner loaded successfully")
-        else:
-            print("✗ Sentiment Scanner failed to load")
-
         # Load Toxicity Scanner
         toxicity_scanner = ToxicityScanner()
         if toxicity_scanner.initialize():
@@ -88,13 +81,29 @@ class ScannerManager:
         else:
             print("✗ Toxicity Scanner failed to load")
 
-        # Load Token Limit Scanner
-        token_limit_scanner = TokenLimitScanner()
-        if token_limit_scanner.initialize():
-            self.scanners["token_limit"] = token_limit_scanner
-            print("✓ Token Limit Scanner loaded successfully")
+        # Load Gibberish Scanner
+        gibberish_scanner = GibberishScanner()
+        if gibberish_scanner.initialize():
+            self.scanners["gibberish"] = gibberish_scanner
+            print("✓ Gibberish Scanner loaded successfully")
         else:
-            print("✗ Token Limit Scanner failed to load")
+            print("✗ Gibberish Scanner failed to load")
+
+        # Load Ban Topics Scanner
+        ban_topics_scanner = BanTopicsScanner()
+        if ban_topics_scanner.initialize():
+            self.scanners["ban_topics"] = ban_topics_scanner
+            print("✓ Ban Topics Scanner loaded successfully")
+        else:
+            print("✗ Ban Topics Scanner failed to load")
+
+        # Load Code Scanner
+        code_scanner = CodeScanner()
+        if code_scanner.initialize():
+            self.scanners["code"] = code_scanner
+            print("✓ Code Scanner loaded successfully")
+        else:
+            print("✗ Code Scanner failed to load")
 
         # Load Sensitive Scanner
         sensitive_scanner = SensitiveScanner()

@@ -7,6 +7,16 @@ This script should be run during Docker build to avoid downloading models at run
 import sys
 import os
 
+# Set model cache environment variables BEFORE any imports
+if os.name == 'nt':  # Windows
+    cache_dir = os.path.join(os.getcwd(), 'models', 'cache')
+    hf_dir = os.path.join(os.getcwd(), 'models', 'hf')
+    os.environ.setdefault('TRANSFORMERS_CACHE', cache_dir)
+    os.environ.setdefault('HF_HOME', hf_dir)
+else:  # Docker/Linux
+    os.environ.setdefault('TRANSFORMERS_CACHE', '/app/models/cache')
+    os.environ.setdefault('HF_HOME', '/app/models/hf')
+
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -79,7 +89,7 @@ try:
     failed_scanners = []
     
     # Categorize scanners
-    input_scanners = ['anonymize', 'prompt_injection', 'regex', 'secrets', 'invisible_text', 'language', 'sentiment', 'toxicity', 'token_limit']
+    input_scanners = ['anonymize', 'prompt_injection', 'regex', 'secrets', 'invisible_text', 'language', 'toxicity']
     output_scanners = ['sensitive', 'factual_consistency', 'relevance', 'malicious_urls']
     
     for name, scanner in manager.scanners.items():
@@ -101,14 +111,14 @@ try:
             failed_scanners.append(name)
             print(f"  ❌ {name} failed")
     
-    print("
-📊 Pre-download Summary:"    print(f"  ✅ Successful: {successful_scanners}")
+    print("\n📊 Pre-download Summary:")
+    print(f"  ✅ Successful: {successful_scanners}")
     print(f"  ❌ Failed: {len(failed_scanners)}")
     if failed_scanners:
         print(f"  Failed scanners: {', '.join(failed_scanners)}")
     
-    print("
-💾 Models should now be cached in Docker layer"    print(f"📋 Available scanners: {list(manager.scanners.keys())}")
+    print("\n💾 Models should now be cached in Docker layer")
+    print(f"📋 Available scanners: {list(manager.scanners.keys())}")
     
     if successful_scanners > 0:
         print("🎉 Pre-download completed successfully!")

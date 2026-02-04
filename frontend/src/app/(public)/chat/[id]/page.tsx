@@ -1,47 +1,68 @@
-export const dynamic = 'force-dynamic';
+"use client";
 
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/src/components/ui/button";
+import { Sidebar } from "@/src/components/chat/sidebar";
 import { ChatInterface } from "@/src/components/chat/chat-interface";
-import { Message } from "@/src/lib/models";
-import connectToDatabase from "@/src/lib/db";
-import { auth } from "@/src/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 
-async function getChatMessages(id: string) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+export default function ChatIdPage() {
+  const params = useParams();
+  const chatId = params.id as string;
+  const [key, setKey] = useState(0);
+  const router = useRouter();
 
-    if (!session) {
-        return null; // Handle auth redirect in component
-    }
+  const createNewChat = () => {
+    setKey((prev) => prev + 1);
+    router.push("/chat");
+  };
 
-    try {
-        await connectToDatabase();
-        const messages = await Message.find({ chatId: id }).sort({ createdAt: 1 }).lean();
-        
-        return messages.map((m: any) => ({
-            role: m.role,
-            content: m.content,
-            attachments: m.attachments ? m.attachments.map((a: any) => ({
-                name: a.name,
-                type: a.type,
-                data: a.data
-            })) : []
-        }));
-    } catch (e) {
-        console.error("Error fetching messages", e);
-        return [];
-    }
-}
+  const loadChat = async (id: string) => {
+    setKey((prev) => prev + 1);
+    router.push(`/chat/${id}`);
+  };
 
-export default async function ChatIdPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const messages = await getChatMessages(id);
+  const handleChatCreated = (newChatId: string) => {
+    // React Query will automatically refetch chats list
+  };
 
-    if (messages === null) {
-        redirect("/signin");
-    }
+  return (
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+      {/* Sidebar - Always visible */}
+      <div className="w-64 border-r bg-background overflow-hidden">
+        <Sidebar
+          onChatSelect={loadChat}
+          onNewChat={createNewChat}
+          currentChatId={chatId}
+        />
+      </div>
 
-    return <ChatInterface id={id} initialMessages={messages} />;
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1 relative">
+        {/* Header */}
+        <div className="flex items-center gap-2 p-4 border-b bg-background">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={createNewChat}
+            className="gap-2"
+          >
+            <Plus size={16} />
+            New Chat
+          </Button>
+        </div>
+
+        {/* Chat Interface */}
+        <div className="flex-1 overflow-hidden">
+          <ChatInterface
+            key={key}
+            id={chatId}
+            onChatCreated={handleChatCreated}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }

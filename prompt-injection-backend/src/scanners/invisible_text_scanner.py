@@ -11,6 +11,7 @@ class InvisibleTextScanner(BaseScanner):
             description="Scans prompts for invisible Unicode characters and removes them"
         )
         self.scanner = None
+        self.last_detected_chars = []
 
     def initialize(self) -> bool:
         """Initialize the Invisible Text scanner with LLM Guard"""
@@ -42,9 +43,67 @@ class InvisibleTextScanner(BaseScanner):
         if not self.available or not self.scanner:
             raise RuntimeError("InvisibleTextScanner is not available")
 
-        return self.scanner.scan(prompt)
+        # Clear previous detections
+        self.last_detected_chars = []
+        
+        # Detect invisible characters before scanning
+        invisible_chars_map = {
+            '\u200B': 'Zero-Width Space',
+            '\u200C': 'Zero-Width Non-Joiner',
+            '\u200D': 'Zero-Width Joiner',
+            '\u200E': 'Left-to-Right Mark',
+            '\u200F': 'Right-to-Left Mark',
+            '\u202A': 'Left-to-Right Embedding',
+            '\u202B': 'Right-to-Left Embedding',
+            '\u202C': 'Pop Directional Formatting',
+            '\u202D': 'Left-to-Right Override',
+            '\u202E': 'Right-to-Left Override',
+            '\u2060': 'Word Joiner',
+            '\u2061': 'Function Application',
+            '\u2062': 'Invisible Times',
+            '\u2063': 'Invisible Separator',
+            '\u2064': 'Invisible Plus',
+            '\uFEFF': 'Zero-Width No-Break Space',
+            '\u180E': 'Mongolian Vowel Separator'
+        }
+        
+        # Track found invisible characters
+        found_chars = {}
+        
+        for i, char in enumerate(prompt):
+            if char in invisible_chars_map:
+                char_name = invisible_chars_map[char]
+                if char not in found_chars:
+                    found_chars[char] = {
+                        'char': char,
+                        'name': char_name,
+                        'unicode': f'U+{ord(char):04X}',
+                        'positions': [],
+                        'count': 0
+                    }
+                found_chars[char]['positions'].append(i)
+                found_chars[char]['count'] += 1
+        
+        # Convert to list of entities (use unicode escape for JSON serialization)
+        for char_data in found_chars.values():
+            self.last_detected_chars.append({
+                'character': f"\\u{ord(char_data['char']):04x}",
+                'name': char_data['name'],
+                'unicode': char_data['unicode'],
+                'count': char_data['count'],
+                'positions': char_data['positions'][:10]  # First 10 positions
+            })
+        
+        print(f"DEBUG: Found {len(self.last_detected_chars)} invisible characters")
+        print(f"DEBUG: last_detected_chars = {self.last_detected_chars}")
+        
+        # Perform the scan
+        result = self.scanner.scan(prompt)
+        
+        return result
 
     def get_detected_entities(self, prompt: str) -> List[Dict[str, Any]]:
         """Get detected invisible characters from the prompt"""
-        # Invisible text scanner doesn't provide detailed entities
-        return []
+        print(f"DEBUG get_detected_entities: Returning {len(self.last_detected_chars)} entities")
+        print(f"DEBUG get_detected_entities: last_detected_chars = {self.last_detected_chars}")
+        return self.last_detected_chars

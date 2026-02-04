@@ -1,95 +1,88 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { cn } from "@/src/lib/utils";
+import { useChats, useDeleteChat } from "@/src/hooks/use-chat-queries";
 
-interface Chat {
-    _id: string;
-    title: string;
-    createdAt: string;
+interface SidebarProps {
+  onChatSelect: (chatId: string) => void;
+  onNewChat: () => void;
+  currentChatId: string | null;
 }
 
-export function Sidebar({ className }: { className?: string }) {
-    const [chats, setChats] = useState<Chat[]>([]);
-    const pathname = usePathname();
-    const router = useRouter();
+export function Sidebar({
+  onChatSelect,
+  onNewChat,
+  currentChatId,
+}: SidebarProps) {
+  const { data: chats = [], isLoading } = useChats();
+  const deleteChat = useDeleteChat();
 
-    useEffect(() => {
-        fetchChats();
-    }, [pathname]); // Refetch when path changes (e.g. new chat created)
+  const handleDeleteChat = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this chat?")) return;
 
-    const fetchChats = async () => {
-        try {
-            const res = await fetch("/api/chats");
-            if (res.ok) {
-                const data = await res.json();
-                setChats(data.chats);
-            }
-        } catch (error) {
-            console.error("Failed to fetch chats", error);
-        }
-    };
+    try {
+      await deleteChat.mutateAsync(id);
+      if (currentChatId === id) {
+        onNewChat();
+      }
+    } catch (error) {
+      console.error("Failed to delete chat", error);
+    }
+  };
 
-    const deleteChat = async (e: React.MouseEvent, id: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this chat?")) return;
+  return (
+    <div className="flex flex-col h-full bg-background">
+      <div className="p-3 border-b">
+        <Button
+          onClick={onNewChat}
+          className="w-full justify-start gap-2"
+          variant="outline"
+        >
+          <Plus size={16} />
+          New Chat
+        </Button>
+      </div>
 
-        try {
-            const res = await fetch(`/api/chats/${id}`, {
-                method: "DELETE",
-            });
-            if (res.ok) {
-                setChats((prev) => prev.filter((c) => c._id !== id));
-                if (pathname.includes(id)) {
-                    router.push("/chat");
-                }
-            }
-        } catch (error) {
-            console.error("Failed to delete chat", error);
-        }
-    };
-
-    return (
-        <div className={cn("w-64 border-r h-full flex flex-col bg-muted/20", className)}>
-            <div className="p-4 border-b">
-                <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2" 
-                    onClick={() => router.push("/chat")}
-                >
-                    <Plus size={16} />
-                    New Chat
-                </Button>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {isLoading ? (
+          <div className="text-center text-sm text-muted-foreground p-4">
+            Loading chats...
+          </div>
+        ) : chats.length === 0 ? (
+          <div className="text-center text-sm text-muted-foreground p-4">
+            No chats yet. Start a conversation!
+          </div>
+        ) : (
+          chats.map((chat) => (
+            <div
+              key={chat._id}
+              onClick={() => onChatSelect(chat._id)}
+              className={cn(
+                "group flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors",
+                currentChatId === chat._id && "bg-muted",
+              )}
+            >
+              <MessageSquare
+                size={16}
+                className="shrink-0 text-muted-foreground"
+              />
+              <span className="flex-1 text-sm truncate">{chat.title}</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                onClick={(e) => handleDeleteChat(e, chat._id)}
+              >
+                <Trash2 size={14} />
+              </Button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {chats.map((chat) => (
-                    <Link
-                        key={chat._id}
-                        href={`/chat/${chat._id}`}
-                        className={cn(
-                            "flex items-center justify-between p-2 rounded-lg text-sm hover:bg-muted transition-colors group",
-                            pathname === `/chat/${chat._id}` ? "bg-muted font-medium" : "text-muted-foreground"
-                        )}
-                    >
-                        <div className="flex items-center gap-2 truncate flex-1 min-w-0">
-                            <MessageSquare size={16} className="shrink-0" />
-                            <span className="truncate">{chat.title}</span>
-                        </div>
-                        <button
-                            onClick={(e) => deleteChat(e, chat._id)}
-                            className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                        >
-                            <Trash2 size={14} />
-                        </button>
-                    </Link>
-                ))}
-            </div>
-        </div>
-    );
+          ))
+        )}
+      </div>
+    </div>
+  );
 }

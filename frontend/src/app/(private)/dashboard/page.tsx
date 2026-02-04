@@ -14,49 +14,25 @@ export default async function DashboardPage() {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       {user && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Welcome back, {user.name}!</CardTitle>
+              <CardTitle>Welcome, {user.name}!</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>You are successfully logged in.</p>
+              <p className="text-muted-foreground">
+                Test AI prompt injection vulnerabilities in the chat interface.
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Account Status</CardTitle>
+              <CardTitle>Account Info</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>
+              <p className="text-sm">
                 <strong>Email:</strong> {user.email}
               </p>
-              <p>
-                <strong>Email Verified:</strong>{" "}
-                {user.emailVerified ? "Yes" : "No"}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc list-inside">
-                <li>
-                  <a href="/profile" className="text-blue-600 hover:underline">
-                    View Profile
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/auth/signout"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Sign Out
-                  </a>
-                </li>
-              </ul>
             </CardContent>
           </Card>
         </div>

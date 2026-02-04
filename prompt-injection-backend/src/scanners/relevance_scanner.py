@@ -47,17 +47,28 @@ class RelevanceScanner(BaseScanner):
 
         try:
             # The scanner checks relevance between prompt and model_output
-            sanitized_output, is_valid, risk_score = self.scanner.scan(prompt, model_output)
+            result = self.scanner.scan(prompt, model_output)
+            
+            # Handle different return formats from LLMGuard
+            if isinstance(result, dict):
+                sanitized_output = result.get("sanitized_output", model_output)
+                is_valid = result.get("is_valid", True)
+                risk_score = result.get("risk_score", 0.0)
+            elif isinstance(result, (list, tuple)):
+                if len(result) >= 3:
+                    sanitized_output, is_valid, risk_score = result[0], result[1], result[2]
+                else:
+                    # Fallback if unexpected format
+                    sanitized_output = model_output
+                    is_valid = True
+                    risk_score = 0.0
+            else:
+                # Fallback for unexpected return type
+                sanitized_output = model_output
+                is_valid = True
+                risk_score = 0.0
 
-            # For output scanners, we return sanitized_output instead of sanitized_prompt
-            detected_entities = []
-
-            return {
-                "sanitized_output": sanitized_output,
-                "is_valid": is_valid,
-                "risk_score": risk_score,
-                "detected_entities": detected_entities
-            }
+            return sanitized_output, is_valid, risk_score
 
         except Exception as e:
             raise RuntimeError(f"Relevance scanning failed: {str(e)}")
